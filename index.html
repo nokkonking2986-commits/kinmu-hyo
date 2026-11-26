@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cut">
+<meta name="theme-color" content="#1f3a5f">
+<title>勤務表</title>
+<style>
+:root{
+  --bg:#f3f5f8; --card:#fff; --ink:#1d2430; --sub:#6b7480; --line:#dde2e8;
+  --navy:#1f3a5f; --sun:#d23b3b; --sat:#2f6fd0; --hol-bg:#fde8e8; --today:#ffcf4a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+.wrap{max-width:560px;margin:0 auto;padding:0 8px calc(76px + env(safe-area-inset-bottom))}
+header{background:var(--navy);color:#fff;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0;flex:1;font-weight:700}
+header .who{font-size:13px;opacity:.9}
+header button{background:rgba(255,255,255,.15);border:0;border-radius:6px;padding:5px 9px;font-size:12px;color:#fff}
+.demo{background:#fff3cd;color:#7a5b00;font-size:12px;padding:6px 12px;text-align:center}
+.card{background:var(--card);border-radius:10px;padding:10px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.mnav{display:flex;align-items:center;justify-content:space-between;margin:10px 0 4px}
+.mnav button{border:1px solid var(--line);background:#fff;border-radius:8px;width:44px;height:38px;font-size:20px}
+.mnav button:disabled{opacity:.3}
+.mnav .t{text-align:center}
+.mnav .t b{font-size:19px}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;margin-left:6px;vertical-align:2px}
+.b-plan{background:#e6eefb;color:#2f5fae}.b-res{background:#e3f4e8;color:#23784a}
+.status{font-size:13px;padding:8px 10px;border-radius:8px;margin:6px 0}
+.st-open{background:#e7f6ec;color:#1f6b3d}.st-closed{background:#f6eaea;color:#8a2d2d}.st-none{background:#eef1f4;color:var(--sub)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.cal>div{min-width:0}
+.bal div{min-width:0}
+.cal .wd{text-align:center;font-size:12px;font-weight:700;padding:4px 0;color:var(--sub)}
+.cal .wd.sun{color:var(--sun)}.cal .wd.sat{color:var(--sat)}
+.day{background:#fff;border-radius:6px;min-height:64px;padding:3px 2px 2px;display:flex;flex-direction:column;align-items:center;position:relative;border:1px solid transparent;overflow:hidden}
+.day.empty{background:transparent}
+.day.hol{background:var(--hol-bg)}
+.day.today{border-color:var(--today);box-shadow:inset 0 0 0 1px var(--today)}
+.day.tap{cursor:pointer}
+.day.tap:active{filter:brightness(.93)}
+.dn{font-size:12px;font-weight:700;line-height:1}
+.dn.sun,.dn.hol{color:var(--sun)}.dn.sat{color:var(--sat)}
+.hn{font-size:8px;color:var(--sun);line-height:1.1;text-align:center;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sym{margin-top:3px;font-size:20px;font-weight:700;width:34px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.hope{margin-top:auto;font-size:9px;font-weight:700;border-radius:4px;padding:1px 3px;white-space:nowrap;background:#fff4d6;color:#8a5a00;border:1px solid #f0d58a}
+.s-day{background:#e3f4e8;color:#1f7a45}.s-night{background:#e3e8fb;color:#2b3fa8}.s-ake{background:#f1f2f4;color:#9aa1aa}
+.s-off{background:#fde3e3;color:#c03030}.s-paid{background:#fbe6f3;color:#a3307a}.s-help{background:#fff0dc;color:#b45f00}
+.s-tomari{background:#dcf3f3;color:#137a7a}.s-etc{background:#efe9df;color:#6d5a3a}
+.alln{margin-top:2px;width:100%;display:flex;flex-direction:column;gap:1px}
+.alln span{font-size:10px;line-height:1.25;border-radius:3px;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.bal{display:flex;gap:8px}
+.bal div{flex:1;background:#f6f8fb;border-radius:8px;padding:8px;text-align:center}
+.bal .v{font-size:24px;font-weight:700}
+.bal .l{font-size:12px;color:var(--sub)}
+.note{font-size:12px;color:var(--sub);margin:6px 2px}
+details.leg summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 2px}
+.leg-g{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;margin-top:6px}
+.leg-g span.k{display:inline-block;width:22px;text-align:center;border-radius:4px;font-weight:700;margin-right:4px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav.tabs button{flex:1;max-width:140px;border:0;background:none;padding:9px 0 8px;font-size:12px;color:var(--sub)}
+nav.tabs button .i{display:block;font-size:19px;line-height:1.2}
+nav.tabs button.on{color:var(--navy);font-weight:700}
+.login{max-width:360px;margin:40px auto;padding:0 16px}
+.login h2{font-size:20px;text-align:center}
+.login input{width:100%;font-size:22px;padding:12px;border:1px solid var(--line);border-radius:10px;text-align:center;letter-spacing:2px}
+.btn{display:block;width:100%;border:0;border-radius:10px;padding:13px;font-size:16px;font-weight:700;background:var(--navy);color:#fff;margin-top:12px}
+.btn.sub{background:#e9edf2;color:var(--ink)}
+.btn.danger{background:#f6e3e3;color:#a12a2a}
+.err{color:#b42323;font-size:13px;text-align:center;min-height:20px;margin-top:8px}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:560px;border-radius:14px 14px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom))}
+.sheet h3{margin:2px 0 10px;font-size:16px}
+.opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px;margin:6px 0;font-size:14px}
+.opt.sel{border-color:#d9a400;background:#fff8e3}
+.opt b{display:inline-block;min-width:58px;font-size:13px;color:#8a5a00}
+.list .row{display:flex;gap:8px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line);font-size:14px}
+.list .row:last-child{border-bottom:0}
+.list .d{width:78px;font-weight:700}
+.list .d.sun,.list .d.hol{color:var(--sun)}.list .d.sat{color:var(--sat)}
+.list .n{width:60px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(25,30,40,.92);color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;z-index:30;max-width:90%;text-align:center}
+.cnt{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;margin:4px 0}
+.cnt span{background:#f1f3f6;border-radius:6px;padding:3px 7px}
+.loading{text-align:center;color:var(--sub);margin-top:60px}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">読み込み中…</div></div>
+<script>
+'use strict';
+// ===== 設定 =====
+// Firebase作成後、コンソールの「firebaseConfig」をここに貼り付ける。null のままだとお試しモード(この端末だけに保存)。
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyA-4J1qLRy-Yh8AP3mr_CsD0vwC-J8vgzo',
+  authDomain: 'kinmu-kakogawa.firebaseapp.com',
+  projectId: 'kinmu-kakogawa',
+  storageBucket: 'kinmu-kakogawa.firebasestorage.app',
+  messagingSenderId: '406531322767',
+  appId: '1:406531322767:web:f458ea73725ba8ac5991fa',
+};
+const ADMIN_NO = '1807';          // 責任者(希望一覧・データ取込が使える)
+const ADMIN_NAME = '岡本';
+const FB_VER = '10.12.2';
+
+const HOPE_TYPES = {
+  1: { short: '明・巡○', label: '夜勤明けでも可', sub: '巡視要員として出勤できる' },
+  2: { short: '明・巡×', label: '夜勤明けでも可', sub: '巡視要員として出勤できない' },
+  3: { short: '公・巡○', label: '公休を希望',     sub: '巡視要員として出勤できる' },
+  4: { short: '公・巡×', label: '公休を希望',     sub: '巡視要員として出勤できない' },
+};
+const SYM = {
+  '○': ['日勤', 's-day'], '◎': ['夜勤', 's-night'], '明': ['夜勤明け', 's-ake'],
+  '公': ['公休', 's-off'], '有': ['有給休暇', 's-paid'], '代': ['代休', 's-paid'],
+  '旅': ['社員旅行', 's-paid'], '特': ['特休', 's-paid'],
+  '応': ['応援(他事業所)', 's-help'], '尼': ['尼崎事業所で勤務', 's-help'], '楽': ['楽農生活センターで勤務', 's-help'],
+  '泊': ['泊川排水機場で勤務', 's-tomari'],
+  '健': ['健康診断', 's-etc'], '打': ['発注者との打合せ', 's-etc'], '車': ['伊保事業所へ車を取りに行く', 's-etc'], '講': ['講習', 's-etc'],
+};
+const OFF_SYMS = new Set(['', '明', '公', '有', '代', '旅', '特']); // 全員表で非表示
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
+
+// ===== ユーティリティ =====
+const p2 = n => String(n).padStart(2, '0');
+const ymKey = (y, m) => `${y}-${p2(m)}`;
+const dKey = (y, m, d) => `${y}-${p2(m)}-${p2(d)}`;
+const parseYM = k => k.split('-').map(Number);
+const addMonth = (k, n) => { const [y, m] = parseYM(k); const d = new Date(y, m - 1 + n, 1); return ymKey(d.getFullYear(), d.getMonth() + 1); };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ls = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const IS_DEMO = !FIREBASE_CONFIG || window.KINMU_FORCE_DEMO === true;
+// お試しモードだけ ?today=2026-11-21 で「今日」を変えて締切の動きを試せる
+function getNow() {
+  if (IS_DEMO) {
+    const q = new URLSearchParams(location.search).get('today');
+    if (q && /^\d{4}-\d{2}-\d{2}$/.test(q)) { const [y, m, d] = q.split('-').map(Number); const t = new Date(); return new Date(y, m - 1, d, t.getHours(), t.getMinutes()); }
+  }
+  return new Date();
+}
+const NOW = getNow();
+const TODAY = dKey(NOW.getFullYear(), NOW.getMonth() + 1, NOW.getDate());
+const THIS_YM = ymKey(NOW.getFullYear(), NOW.getMonth() + 1);
+
+// ===== 祝日 =====
+const _hol = {};
+function holidays(y) {
+  if (_hol[y]) return _hol[y];
+  const h = {};
+  const add = (m, d, n) => { h[dKey(y, m, d)] = n; };
+  const nthMon = (m, n) => { const f = new Date(y, m - 1, 1).getDay(); return 1 + ((8 - f) % 7) + (n - 1) * 7; };
+  add(1, 1, '元日'); add(1, nthMon(1, 2), '成人の日'); add(2, 11, '建国記念の日'); add(2, 23, '天皇誕生日');
+  add(3, Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4)), '春分の日');
+  add(4, 29, '昭和の日'); add(5, 3, '憲法記念日'); add(5, 4, 'みどりの日'); add(5, 5, 'こどもの日');
+  add(7, nthMon(7, 3), '海の日'); add(8, 11, '山の日'); add(9, nthMon(9, 3), '敬老の日');
+  add(9, Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4)), '秋分の日');
+  add(10, nthMon(10, 2), 'スポーツの日'); add(11, 3, '文化の日'); add(11, 23, '勤労感謝の日');
+  // 国民の休日(祝日に挟まれた平日)
+  for (let t = new Date(y, 0, 2); t.getFullYear() === y; t.setDate(t.getDate() + 1)) {
+    const k = dKey(y, t.getMonth() + 1, t.getDate());
+    if (h[k] || t.getDay() === 0) continue;
+    const a = new Date(t); a.setDate(a.getDate() - 1); const b = new Date(t); b.setDate(b.getDate() + 1);
+    if (h[dKey(a.getFullYear(), a.getMonth() + 1, a.getDate())] && h[dKey(b.getFullYear(), b.getMonth() + 1, b.getDate())]) h[k] = '国民の休日';
+  }
+  // 振替休日
+  for (const k of Object.keys(h).sort()) {
+    const [yy, mm, dd] = k.split('-').map(Number); const t = new Date(yy, mm - 1, dd);
+    if (t.getDay() !== 0) continue;
+    do { t.setDate(t.getDate() + 1); } while (h[dKey(t.getFullYear(), t.getMonth() + 1, t.getDate())]);
+    if (t.getFullYear() === y) h[dKey(y, t.getMonth() + 1, t.getDate())] = '振替休日';
+  }
+  return (_hol[y] = h);
+}
+const holName = k => holidays(Number(k.slice(0, 4)))[k] || '';
+
+// ===== データ保存先(Firebase / お試し) =====
+let db = null;
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('読み込み失敗: ' + src)); document.head.appendChild(s); });
+}
+const Store = {
+  async init() {
+    if (IS_DEMO) return;
+    const base = `https://www.gstatic.com/firebasejs/${FB_VER}/`;
+    await loadScript(base + 'firebase-app-compat.js');
+    await loadScript(base + 'firebase-auth-compat.js');
+    await loadScript(base + 'firebase-firestore-compat.js');
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    try { await db.enablePersistence({ synchronizeTabs: true }); } catch (e) {}
+    await firebase.auth().signInAnonymously();
+  },
+  async loadData() {
+    if (IS_DEMO) {
+      const s = ls.get('kinmu_demo_data');
+      if (s) { try { return JSON.parse(s); } catch (e) {} }
+      return window.KINMU_DEMO || null;
+    }
+    const snap = await db.collection('kinmu').doc('data').get();
+    return snap.exists ? JSON.parse(snap.data().json) : null;
+  },
+  async saveData(obj) {
+    if (IS_DEMO) { ls.set('kinmu_demo_data', JSON.stringify(obj)); return; }
+    await db.collection('kinmu').doc('data').set({ json: JSON.stringify(obj), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  },
+  _demoHopes() { try { return JSON.parse(ls.get('kinmu_demo_hopes') || '{}'); } catch (e) { return {}; } },
+  async listHopes(month) {
+    if (IS_DEMO) return Object.values(this._demoHopes()).filter(h => h.month === month);
+    const qs = await db.collection('kibou').where('month', '==', month).get();
+    return qs.docs.map(d => d.data());
+  },
+  async setHope(no, name, date, type) {
+    const rec = { no, name, date, month: date.slice(0, 7), type };
+    if (IS_DEMO) { const all = this._demoHopes(); all[no + '_' + date] = rec; ls.set('kinmu_demo_hopes', JSON.stringify(all)); return; }
+    await db.collection('kibou').doc(no + '_' + date).set({ ...rec, at: firebase.firestore.FieldValue.serverTimestamp() });
+  },
+  // 暗証番号(ハッシュのみ保存)
+  _demoPins() { try { return JSON.parse(ls.get('kinmu_demo_pins') || '{}'); } catch (e) { return {}; } },
+  async getPin(no) {
+    if (IS_DEMO) return this._demoPins()[no] || null;
+    const s = await db.collection('pins').doc(no).get(); return s.exists ? s.data().hash : null;
+  },
+  async setPin(no, hash) {
+    if (IS_DEMO) { const a = this._demoPins(); a[no] = hash; ls.set('kinmu_demo_pins', JSON.stringify(a)); return; }
+    await db.collection('pins').doc(no).set({ hash, at: firebase.firestore.FieldValue.serverTimestamp() });
+  },
+  async delPin(no) {
+    if (IS_DEMO) { const a = this._demoPins(); delete a[no]; ls.set('kinmu_demo_pins', JSON.stringify(a)); return; }
+    await db.collection('pins').doc(no).delete();
+  },
+  async delHope(no, date) {
+    if (IS_DEMO) { const all = this._demoHopes(); delete all[no + '_' + date]; ls.set('kinmu_demo_hopes', JSON.stringify(all)); return; }
+    await db.collection('kibou').doc(no + '_' + date).delete();
+  },
+};
+
+// ===== 状態 =====
+const S = { data: null, me: null, view: 'me', ym: THIS_YM, hopes: [], hopesYm: null, busy: false };
+const app = document.getElementById('app');
+
+function months() { return S.data ? Object.keys(S.data.months).sort() : []; }
+// 希望休の締切 = 対象月の前月20日 23:59
+function deadline(ym) { const [y, m] = parseYM(ym); return new Date(y, m - 2, 20, 23, 59, 59); }
+const canHope = ym => NOW <= deadline(ym);
+function firstOpenYm() { let k = THIS_YM; while (!canHope(k)) k = addMonth(k, 1); return k; }
+function ymRange() {
+  const ms = months();
+  const lo = ms.length ? (ms[0] < THIS_YM ? ms[0] : THIS_YM) : THIS_YM;
+  let hi = ms.length ? ms[ms.length - 1] : THIS_YM;
+  const fo = firstOpenYm(); if (fo > hi) hi = fo;
+  return [lo, hi];
+}
+// その日の記号(終わった月は結果、それ以外は予定)。データがない日は null
+function symOf(no, k) {
+  const m = S.data && S.data.months[k.slice(0, 7)]; if (!m) return null;
+  const src = m.result || m.plan; const row = src[no]; if (!row) return null;
+  const v = row[Number(k.slice(8, 10)) - 1]; return v === undefined ? null : v;
+}
+function nextDayKey(k) { const [y, m, d] = k.split('-').map(Number); const t = new Date(y, m - 1, d + 1); return dKey(t.getFullYear(), t.getMonth() + 1, t.getDate()); }
+const memberName = no => { const m = S.data && S.data.members.find(x => x.no === no); return m ? m.name : no; };
+
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ===== 画面 =====
+function render() {
+  if (!S.me || L.stage === 'change') return renderLogin();
+  const isAdmin = S.me === ADMIN_NO;
+  const tabs = [['me', '📅', '自分'], ['all', '👥', '全員']];
+  if (isAdmin) tabs.push(['list', '📝', '希望一覧'], ['admin', '⚙', '取込']);
+  let body = '';
+  if (!S.data) S.view = isAdmin ? 'admin' : 'me';
+  if (!S.data && !isAdmin) body = '<p class="note" style="text-align:center;margin-top:40px">勤務表データがまだ登録されていません</p>';
+  else if (S.view === 'me') body = viewMe();
+  else if (S.view === 'all') body = viewAll();
+  else if (S.view === 'list' && isAdmin) body = viewList();
+  else if (S.view === 'admin' && isAdmin) body = viewAdmin();
+  app.innerHTML = `
+    <header><h1>勤務表</h1><span class="who">${esc(memberName(S.me))}さん</span><button data-act="logout">サインアウト</button></header>
+    ${IS_DEMO ? `<div class="demo">お試しモード（この端末だけに保存）${TODAY !== ymdNow() ? '／今日=' + TODAY : ''}</div>` : ''}
+    <div class="wrap">${body}${S.data ? `<p class="note" style="text-align:center">データ更新：${esc(S.data.generated || '')}</p>` : ''}</div>
+    <nav class="tabs">${tabs.map(([k, i, l]) => `<button data-tab="${k}" class="${S.view === k ? 'on' : ''}"><span class="i">${i}</span>${l}</button>`).join('')}</nav>`;
+}
+function ymdNow() { const t = new Date(); return dKey(t.getFullYear(), t.getMonth() + 1, t.getDate()); }
+
+// ===== サインイン(社員番号 → 暗証番号4桁。初回は暗証番号を自分で設定) =====
+async function pinHash(no, pin) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kinmu:' + no + ':' + pin));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+const L = { stage: 'no', no: '', hash: null }; // stage: no / pin / setpin / change
+function renderLogin() {
+  const st = L.stage;
+  const title = st === 'no' ? '社員番号を入力してください'
+    : st === 'pin' ? `${esc(memberName(L.no))}さん　暗証番号（4桁）を入力してください`
+    : st === 'setpin' ? `${esc(memberName(L.no))}さん　初回サインインです。<br>暗証番号（数字4桁）を決めて、2回入力してください`
+    : '新しい暗証番号（数字4桁）を2回入力してください';
+  const two = st === 'setpin' || st === 'change';
+  app.innerHTML = `
+    ${IS_DEMO ? '<div class="demo">お試しモード（この端末だけに保存）</div>' : ''}
+    <div class="login">
+      <h2>勤務表</h2>
+      <p class="note" style="text-align:center">${title}</p>
+      ${st === 'no' ? '<input id="no" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="8">'
+        : `<input id="p1" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" placeholder="●●●●">
+           ${two ? '<input id="p2" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="4" placeholder="もう一度" style="margin-top:10px">' : ''}`}
+      <button class="btn" data-act="login">${st === 'no' ? '次へ' : two ? '設定する' : 'サインイン'}</button>
+      ${st !== 'no' ? `<button class="btn sub" data-act="loginBack">${st === 'change' ? 'やめる' : '社員番号を入れ直す'}</button>` : ''}
+      ${st === 'pin' ? `<p class="note" style="text-align:center">暗証番号を忘れたら${ADMIN_NAME}へ連絡してください（リセットできます）</p>` : ''}
+      <div class="err" id="err"></div>
+    </div>`;
+  const f = document.getElementById(st === 'no' ? 'no' : 'p1');
+  f.focus();
+  app.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+}
+function signedIn(no, hash) {
+  S.me = no; ls.set('kinmu_no', no); if (hash) ls.set('kinmu_pin', hash);
+  L.stage = 'no'; S.view = S.data ? 'me' : 'admin'; S.ym = THIS_YM; S.hopesYm = null;
+  refreshHopes();
+}
+async function doLogin() {
+  const err = document.getElementById('err'); const val = id => ((document.getElementById(id) || {}).value || '').trim();
+  try {
+    if (L.stage === 'no') {
+      const no = val('no');
+      const known = S.data ? S.data.members.some(m => m.no === no) : no === ADMIN_NO; // データ未登録時は責任者のみ(初回取込用)
+      if (!known) { err.textContent = S.data ? '社員番号が見つかりません' : '勤務表データがまだ登録されていません'; return; }
+      L.no = no; L.hash = await Store.getPin(no); L.stage = L.hash ? 'pin' : 'setpin'; return renderLogin();
+    }
+    const p1 = val('p1');
+    if (!/^\d{4}$/.test(p1)) { err.textContent = '数字4桁で入力してください'; return; }
+    if (L.stage === 'pin') {
+      const h = await pinHash(L.no, p1);
+      if (h !== L.hash) { err.textContent = '暗証番号が違います'; document.getElementById('p1').value = ''; return; }
+      return signedIn(L.no, h);
+    }
+    if (p1 !== val('p2')) { err.textContent = '2回の入力が一致しません'; return; }
+    const h = await pinHash(L.no, p1);
+    await Store.setPin(L.no, h);
+    if (L.stage === 'change') { ls.set('kinmu_pin', h); L.stage = 'no'; toast('暗証番号を変更しました'); return render(); }
+    toast('暗証番号を設定しました'); signedIn(L.no, h);
+  } catch (e) { err.textContent = 'エラー：' + e.message; }
+}
+
+function monthNav() {
+  const [lo, hi] = ymRange(); const [y, m] = parseYM(S.ym);
+  const md = S.data && S.data.months[S.ym];
+  const b = md ? (md.result ? '<span class="badge b-res">結果</span>' : '<span class="badge b-plan">予定</span>') : '';
+  return `<div class="mnav"><button data-mv="-1" ${S.ym <= lo ? 'disabled' : ''}>‹</button>
+    <div class="t"><b>${y}年${m}月</b>${b}</div>
+    <button data-mv="1" ${S.ym >= hi ? 'disabled' : ''}>›</button></div>`;
+}
+function hopeStatus() {
+  const dl = deadline(S.ym); const [, dm] = [0, dl.getMonth() + 1];
+  if (S.ym < THIS_YM || (S.data && S.data.months[S.ym] && S.data.months[S.ym].result)) return '';
+  if (canHope(S.ym)) return `<div class="status st-open">希望休の受付中（締切 ${dm}月20日）。日付をタップして入力できます。</div>`;
+  return `<div class="status st-closed">この月の希望休は締め切りました（${dm}月20日まで）。変更は${ADMIN_NAME}へ直接連絡してください。</div>`;
+}
+function calGrid(cellFn) {
+  const [y, m] = parseYM(S.ym); const first = new Date(y, m - 1, 1).getDay(); const days = new Date(y, m, 0).getDate();
+  let h = WD.map((w, i) => `<div class="wd ${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${w}</div>`).join('');
+  for (let i = 0; i < first; i++) h += '<div class="day empty"></div>';
+  for (let d = 1; d <= days; d++) {
+    const k = dKey(y, m, d); const wd = (first + d - 1) % 7; const hn = holName(k);
+    const dc = hn ? 'hol' : wd === 0 ? 'sun' : wd === 6 ? 'sat' : '';
+    const inner = cellFn(k);
+    h += `<div class="day ${hn ? 'hol' : ''} ${k === TODAY ? 'today' : ''} ${inner.tap ? 'tap' : ''}" ${inner.tap ? `data-day="${k}"` : ''}>
+      <div class="dn ${dc}">${d}</div>${hn ? `<div class="hn">${esc(hn)}</div>` : ''}${inner.html}</div>`;
+  }
+  return `<div class="cal">${h}</div>`;
+}
+function symChip(v) {
+  const s = v === '' ? '明' : v; const def = SYM[s];
+  return `<div class="sym ${def ? def[1] : 's-etc'}">${esc(s)}</div>`;
+}
+function viewMe() {
+  const open = canHope(S.ym);
+  const myHopes = {}; S.hopes.filter(h => h.no === S.me).forEach(h => { myHopes[h.date] = h.type; });
+  const grid = calGrid(k => {
+    const v = symOf(S.me, k); const ht = myHopes[k];
+    let html = v === null ? '' : symChip(v);
+    if (ht) html += `<div class="hope">${HOPE_TYPES[ht].short}</div>`;
+    const md = S.data && S.data.months[S.ym];
+    return { html, tap: !(md && md.result) && S.ym >= THIS_YM };
+  });
+  return monthNav() + hopeStatus() + `<div class="card" style="padding:6px">${grid}</div>` + balanceCard() + hoursCard() + legend(true)
+    + `<button class="btn sub" data-act="changePin" style="margin-top:4px">暗証番号を変更</button>`;
+}
+// 時間外・深夜・休日の時間数(労働命令結果報告書から。金額は扱わない)
+function hoursCard() {
+  const md = S.data && S.data.months[S.ym]; const h = md && md.hours && md.hours[S.me];
+  if (!h) return '';
+  const f = m => m ? `${Math.floor(m / 60)}<small>時間</small>${m % 60 ? `${m % 60}<small>分</small>` : ''}` : '0';
+  const [, m] = parseYM(S.ym);
+  return `<div class="card"><div class="note" style="margin-top:0">${m}月の時間（労働命令結果報告書）</div>
+    <div class="bal"><div><div class="v" style="font-size:20px">${f(h.jikangai)}</div><div class="l">時間外</div></div>
+    <div><div class="v" style="font-size:20px">${f(h.shinya)}</div><div class="l">深夜</div></div>
+    <div><div class="v" style="font-size:20px">${f(h.kyujitu)}</div><div class="l">休日</div></div></div></div>`;
+}
+function balanceCard() {
+  const md = S.data && S.data.months[S.ym];
+  let src = null, label = '';
+  if (md && md.result && md.yukyu) { src = md; const [, m] = parseYM(S.ym); label = `${m}月末時点（結果）`; }
+  else {
+    const fin = months().filter(k => k < S.ym && S.data.months[k].result && S.data.months[k].yukyu);
+    if (fin.length) { const k = fin[fin.length - 1]; src = S.data.months[k]; const [, m] = parseYM(k); label = `前月までの確定分（${m}月末時点）`; }
+  }
+  if (!src) return '';
+  const y = src.yukyu[S.me], ko = src.kokyu ? src.kokyu[S.me] : null;
+  const f = v => (v === null || v === undefined) ? '—' : String(v);
+  return `<div class="card"><div class="note" style="margin-top:0">${label}</div>
+    <div class="bal"><div><div class="v">${f(y)}</div><div class="l">残有給（日）</div></div>
+    <div><div class="v">${f(ko)}</div><div class="l">残公休（日）<br><span style="font-size:10px">年間120日</span></div></div></div></div>`;
+}
+function legend(withHope) {
+  const items = Object.entries(SYM).map(([k, [n, c]]) => `<div><span class="k ${c}">${k}</span>${n}</div>`).join('');
+  const hopes = withHope ? Object.values(HOPE_TYPES).map(t => `<div><span class="hope" style="display:inline-block">${t.short}</span> ${t.label}／${t.sub}</div>`).join('') : '';
+  return `<details class="leg card"><summary>記号の説明</summary><div class="leg-g">${items}</div>
+    ${withHope ? `<div class="leg-g" style="grid-template-columns:1fr;margin-top:8px">${hopes}</div>` : ''}
+    <p class="note">応は単独なら日勤帯、翌日が明けなら夜勤の時間帯。全員表では夜勤帯の応を「応夜」と表示。</p></details>`;
+}
+function viewAll() {
+  const ms = S.data ? S.data.members : [];
+  const grid = calGrid(k => {
+    const rows = [];
+    for (const mb of ms) {
+      const v = symOf(mb.no, k); if (v === null || OFF_SYMS.has(v)) continue;
+      let s = v;
+      if (v === '応') { const nv = symOf(mb.no, nextDayKey(k)); if (nv === '' || nv === '明') s = '応夜'; }
+      const def = SYM[v]; rows.push(`<span class="${def ? def[1] : 's-etc'}">${esc(s)}${esc(mb.name)}</span>`);
+    }
+    return { html: `<div class="alln">${rows.join('')}</div>`, tap: false };
+  });
+  return monthNav() + `<div class="card" style="padding:6px">${grid}</div><p class="note">勤務する人だけ表示（明け・公休・有給・代休などは非表示）</p>` + legend(false);
+}
+function viewList() {
+  const [, m] = parseYM(S.ym); const dl = deadline(S.ym);
+  const hs = S.hopes.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.no < b.no ? -1 : 1));
+  const cnt = {}; hs.forEach(h => { cnt[h.no] = (cnt[h.no] || 0) + 1; });
+  const rows = hs.map(h => {
+    const [yy, mm, dd] = h.date.split('-').map(Number); const wd = new Date(yy, mm - 1, dd).getDay(); const hn = holName(h.date);
+    const c = hn ? 'hol' : wd === 0 ? 'sun' : wd === 6 ? 'sat' : '';
+    return `<div class="row"><span class="d ${c}">${mm}/${dd}(${WD[wd]})</span><span class="n">${esc(memberName(h.no))}</span><span class="hope">${HOPE_TYPES[h.type].short}</span></div>`;
+  }).join('');
+  return monthNav() + `<div class="status ${canHope(S.ym) ? 'st-open' : 'st-closed'}">${m}月分の締切：${dl.getMonth() + 1}月20日${canHope(S.ym) ? '（受付中）' : '（締切済）'}</div>
+    <div class="cnt">${S.data.members.map(mb => `<span>${esc(mb.name)} ${cnt[mb.no] || 0}件</span>`).join('')}</div>
+    <div class="card list">${rows || '<p class="note">希望はまだありません</p>'}</div>` + legend(true);
+}
+function viewAdmin() {
+  const ms = months();
+  return `<div class="card"><h3 style="margin:4px 0 8px;font-size:16px">勤務表データの取込</h3>
+    <p class="note">ロドさんが作った <b>kinmu_data.json</b> を選んで「反映」を押すと、全員のアプリに反映されます。</p>
+    <p class="note">現在のデータ：${esc(S.data ? S.data.generated : 'なし')}／${ms.length ? esc(ms[0] + '〜' + ms[ms.length - 1]) : ''}</p>
+    <input type="file" id="jf" accept=".json,application/json" style="margin:8px 0">
+    <button class="btn" data-act="import">反映</button>
+    <div class="err" id="ierr"></div></div>
+    <div class="card"><h3 style="margin:4px 0 8px;font-size:16px">暗証番号のリセット</h3>
+    <p class="note">忘れた人の暗証番号を消します。次回サインイン時に本人が設定し直します。</p>
+    ${(S.data ? S.data.members : []).map(mb => `<button class="btn sub" data-reset="${esc(mb.no)}" style="margin-top:6px">${esc(mb.name)}さんの暗証番号をリセット</button>`).join('')}</div>
+    ${IS_DEMO ? `<div class="card"><p class="note">お試しモードの希望休をすべて消す（この端末だけ）</p><button class="btn danger" data-act="clearDemo">お試しデータを消去</button></div>` : ''}`;
+}
+
+// ===== 操作 =====
+function openHopeSheet(k) {
+  if (!canHope(S.ym)) { toast(`締切（前月20日）を過ぎています。変更は${ADMIN_NAME}へ直接連絡してください。`); return; }
+  const cur = (S.hopes.find(h => h.no === S.me && h.date === k) || {}).type;
+  const [yy, mm, dd] = k.split('-').map(Number); const wd = new Date(yy, mm - 1, dd).getDay();
+  const bg = document.createElement('div'); bg.className = 'sheet-bg';
+  bg.innerHTML = `<div class="sheet"><h3>${mm}月${dd}日(${WD[wd]}) の希望</h3>
+    ${Object.entries(HOPE_TYPES).map(([t, o]) => `<button class="opt ${String(cur) === t ? 'sel' : ''}" data-ht="${t}"><b>${o.short}</b><span>${o.label}<br><small>${o.sub}</small></span></button>`).join('')}
+    ${cur ? '<button class="btn danger" data-ht="0">希望を取り消す</button>' : ''}
+    <button class="btn sub" data-ht="x">閉じる</button></div>`;
+  bg.addEventListener('click', async e => {
+    const b = e.target.closest('[data-ht]');
+    if (!b && e.target !== bg) return;
+    const t = b ? b.dataset.ht : 'x';
+    bg.remove();
+    if (t === 'x') return;
+    if (!canHope(k.slice(0, 7))) { toast('締切を過ぎたため保存できませんでした'); return; }
+    try {
+      if (t === '0') await Store.delHope(S.me, k); else await Store.setHope(S.me, memberName(S.me), k, Number(t));
+      await refreshHopes(true); toast(t === '0' ? '取り消しました' : '保存しました');
+    } catch (err) { toast('保存に失敗しました：' + err.message); }
+  });
+  document.body.appendChild(bg);
+}
+async function refreshHopes(force) {
+  if (S.me && (S.view === 'me' || S.view === 'list') && (force || S.hopesYm !== S.ym)) {
+    try { S.hopes = await Store.listHopes(S.ym); S.hopesYm = S.ym; } catch (e) { S.hopes = []; toast('希望休の読み込みに失敗：' + e.message); }
+  }
+  render();
+}
+async function doImport() {
+  const f = document.getElementById('jf').files[0]; const err = document.getElementById('ierr');
+  if (!f) { err.textContent = 'ファイルを選んでください'; return; }
+  try {
+    const obj = JSON.parse(await f.text());
+    if (!obj.members || !obj.months || !obj.members.some(m => m.no === ADMIN_NO)) throw new Error('勤務表データの形式ではありません');
+    await Store.saveData(obj); S.data = obj; toast('反映しました'); render();
+  } catch (e) { err.textContent = '取込失敗：' + e.message; }
+}
+app.addEventListener('click', e => {
+  const t = e.target.closest('[data-act],[data-tab],[data-mv],[data-day],[data-reset]'); if (!t) return;
+  if (t.dataset.act === 'login') return doLogin();
+  if (t.dataset.act === 'loginBack') { const ch = L.stage === 'change'; L.stage = 'no'; return ch ? render() : renderLogin(); }
+  if (t.dataset.act === 'changePin') { L.stage = 'change'; L.no = S.me; return render(); }
+  if (t.dataset.reset) {
+    const no = t.dataset.reset;
+    if (!confirm(`${memberName(no)}さんの暗証番号をリセットしますか？`)) return;
+    Store.delPin(no).then(() => toast('リセットしました')).catch(err => toast('失敗：' + err.message));
+    return;
+  }
+  if (t.dataset.act === 'logout') { S.me = null; L.stage = 'no'; ls.del('kinmu_no'); ls.del('kinmu_pin'); return render(); }
+  if (t.dataset.act === 'import') return doImport();
+  if (t.dataset.act === 'clearDemo') { ls.del('kinmu_demo_hopes'); S.hopesYm = null; toast('消去しました'); return refreshHopes(true); }
+  if (t.dataset.tab) { S.view = t.dataset.tab; S.hopesYm = null; return refreshHopes(); }
+  if (t.dataset.mv) { const [lo, hi] = ymRange(); const n = addMonth(S.ym, Number(t.dataset.mv)); if (n >= lo && n <= hi) { S.ym = n; refreshHopes(); } return; }
+  if (t.dataset.day) return openHopeSheet(t.dataset.day);
+});
+
+(async function start() {
+  try {
+    await Store.init();
+    S.data = await Store.loadData();
+  } catch (e) {
+    app.innerHTML = `<div class="login"><h2>勤務表</h2><p class="err">接続できませんでした：${esc(e.message)}</p><button class="btn" onclick="location.reload()">再読み込み</button></div>`;
+    return;
+  }
+  let saved = ls.get('kinmu_no');
+  if (IS_DEMO) { // お試し確認用: ?no=1807&view=all&ym=2026-12
+    const q = new URLSearchParams(location.search);
+    if (q.get('no')) saved = q.get('no');
+    if (q.get('view')) S.view = q.get('view');
+    if (/^\d{4}-\d{2}$/.test(q.get('ym') || '')) S.ym = q.get('ym');
+  }
+  let ok = false;
+  if (saved && (S.data ? S.data.members.some(m => m.no === saved) : saved === ADMIN_NO)) {
+    if (IS_DEMO && new URLSearchParams(location.search).get('no')) ok = true; // お試し確認用
+    else { try { const h = await Store.getPin(saved); ok = !!h && h === ls.get('kinmu_pin'); } catch (e) {} }
+  }
+  if (ok) { S.me = saved; await refreshHopes(); }
+  else { ls.del('kinmu_no'); ls.del('kinmu_pin'); render(); }
+})();
+</script>
+</body>
+</html>
