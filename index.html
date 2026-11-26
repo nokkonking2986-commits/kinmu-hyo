@@ -192,7 +192,16 @@ const Store = {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
     try { await db.enablePersistence({ synchronizeTabs: true }); } catch (e) {}
-    await firebase.auth().signInAnonymously();
+    await this.ensureAuth();
+  },
+  // 匿名サインインの完了(トークン取得)まで確実に待つ
+  async ensureAuth(force) {
+    const auth = firebase.auth();
+    if (force || !auth.currentUser) {
+      await new Promise(res => { const u = auth.onAuthStateChanged(() => { u(); res(); }); }); // 保存済みサインインの復元を待つ
+      if (force || !auth.currentUser) await auth.signInAnonymously();
+    }
+    await auth.currentUser.getIdToken(!!force);
   },
   async loadData() {
     if (IS_DEMO) {
@@ -237,6 +246,19 @@ const Store = {
     await db.collection('kibou').doc(no + '_' + date).delete();
   },
 };
+// 権限エラー時はサインインし直して1回だけ再試行
+['loadData', 'saveData', 'listHopes', 'setHope', 'getPin', 'setPin', 'delPin', 'delHope'].forEach(k => {
+  const f = Store[k];
+  Store[k] = async function (...a) {
+    if (IS_DEMO) return f.apply(Store, a);
+    try { await Store.ensureAuth(); return await f.apply(Store, a); }
+    catch (e) {
+      if (e.code !== 'permission-denied') throw e;
+      await Store.ensureAuth(true);
+      return await f.apply(Store, a);
+    }
+  };
+});
 
 // ===== 状態 =====
 const S = { data: null, me: null, view: 'me', ym: THIS_YM, hopes: [], hopesYm: null, busy: false };
